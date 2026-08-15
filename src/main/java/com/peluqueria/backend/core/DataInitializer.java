@@ -96,14 +96,14 @@ public class DataInitializer implements CommandLineRunner {
             UserAccount workerAccount = UserAccount.builder()
                     .email("12345678A")
                     .password(passwordEncoder.encode("12345678A"))
-                    .nombre("Estilista Profesional")
+                    .nombre("Ana Gómez")
                     .role(Role.WORKER)
                     .activo(true)
                     .build();
             workerAccount = userRepository.save(workerAccount);
 
             Worker worker = Worker.builder()
-                    .nombre("Estilista Profesional")
+                    .nombre("Ana Gómez")
                     .dni("12345678A")
                     .especialidad("Corte y Color")
                     .userAccount(workerAccount)

@@ -41,6 +41,12 @@ public class Shift {
     @EqualsAndHashCode.Exclude
     private Worker worker;
 
+    @Column(name = "break_start_time")
+    private LocalTime breakStartTime;
+
+    @Column(name = "break_end_time")
+    private LocalTime breakEndTime;
+
     @Builder.Default
     @OneToMany(mappedBy = "shift", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude

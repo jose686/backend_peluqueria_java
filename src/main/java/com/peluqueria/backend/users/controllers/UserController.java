@@ -31,4 +31,12 @@ public class UserController {
     public ResponseEntity<List<UserDto>> getClients() {
         return ResponseEntity.ok(userService.getClients());
     }
+
+    /**
+     * Endpoint para obtener el listado de todos los trabajadores (sólo accesible para administradores).
+     */
+    @GetMapping("/employees")
+    public ResponseEntity<List<UserDto>> getEmployees() {
+        return ResponseEntity.ok(userService.getEmployees());
+    }
 }

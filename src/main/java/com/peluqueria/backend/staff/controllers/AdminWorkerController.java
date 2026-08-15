@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin/workers")
+@RequestMapping("/api/v1/admin/workers")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminWorkerController {
 

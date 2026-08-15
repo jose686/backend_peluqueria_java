@@ -42,4 +42,15 @@ public class UserServiceImpl implements UserService {
                 .map(UserDto::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Recupera y mapea a DTO todos los usuarios activos con rol de trabajador (empleado).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserDto> getEmployees() {
+        return userRepository.findByRoleAndActivoTrue(Role.WORKER).stream()
+                .map(UserDto::fromEntity)
+                .collect(Collectors.toList());
+    }
 }

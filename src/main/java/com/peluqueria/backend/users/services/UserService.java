@@ -13,4 +13,9 @@ public interface UserService {
      * Obtiene una lista de todos los usuarios registrados con el rol ADMIN que estén activos.
      */
     List<UserDto> getAdmins();
+
+    /**
+     * Obtiene una lista de todos los usuarios registrados con el rol WORKER que estén activos.
+     */
+    List<UserDto> getEmployees();
 }

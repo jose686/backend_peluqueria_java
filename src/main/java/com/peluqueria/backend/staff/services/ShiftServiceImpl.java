@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -69,5 +70,23 @@ public class ShiftServiceImpl implements ShiftService {
         return shiftRepository.findByWorkerId(workerId).stream()
                 .map(ShiftDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ShiftDto> getShiftsByWeek(LocalDate start) {
+        LocalDate end = start.plusDays(6);
+        return shiftRepository.findByFechaBetween(start, end).stream()
+                .map(ShiftDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteShift(UUID id) {
+        if (!shiftRepository.existsById(id)) {
+            throw new IllegalArgumentException("Turno no encontrado");
+        }
+        shiftRepository.deleteById(id);
     }
 }

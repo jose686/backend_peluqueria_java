@@ -14,4 +14,6 @@ public interface ShiftRepository extends JpaRepository<Shift, UUID> {
     List<Shift> findByWorkerIdAndFecha(UUID workerId, LocalDate fecha);
 
     List<Shift> findByWorkerId(UUID workerId);
+
+    List<Shift> findByFechaBetween(LocalDate start, LocalDate end);
 }

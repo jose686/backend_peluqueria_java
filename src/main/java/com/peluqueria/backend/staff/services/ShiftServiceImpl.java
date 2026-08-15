@@ -39,10 +39,11 @@ public class ShiftServiceImpl implements ShiftService {
         }
 
         if (request.breakStartTime() != null && request.breakEndTime() != null) {
-            if (request.breakStartTime().isBefore(request.horaInicio()) || 
-                request.breakEndTime().isAfter(request.horaFin()) || 
-                request.breakStartTime().isAfter(request.breakEndTime())) {
-                throw new IllegalArgumentException("El descanso debe estar dentro de la jornada laboral y la hora de inicio del descanso debe ser previa a su fin.");
+            if (request.breakStartTime().isBefore(request.horaInicio()) ||
+                    request.breakEndTime().isAfter(request.horaFin()) ||
+                    request.breakStartTime().isAfter(request.breakEndTime())) {
+                throw new IllegalArgumentException(
+                        "El descanso debe estar dentro de la jornada laboral y la hora de inicio del descanso debe ser previa a su fin.");
             }
         }
 

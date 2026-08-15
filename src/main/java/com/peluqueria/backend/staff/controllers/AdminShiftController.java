@@ -55,4 +55,31 @@ public class AdminShiftController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    @GetMapping("/week")
+    public ResponseEntity<?> getShiftsByWeek(@RequestParam String startDate) {
+        try {
+            java.time.LocalDate start = java.time.LocalDate.parse(startDate);
+            List<ShiftDto> shifts = shiftService.getShiftsByWeek(start);
+            return ResponseEntity.ok(shifts);
+        } catch (Exception ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", ex.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteShift(@PathVariable UUID id) {
+        try {
+            shiftService.deleteShift(id);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Turno eliminado con éxito");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", ex.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
 }

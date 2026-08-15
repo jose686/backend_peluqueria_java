@@ -8,5 +8,6 @@ import java.util.UUID;
 
 public interface ShiftService {
     ShiftDto saveShift(UUID workerId, ShiftRequestDto request);
+
     List<ShiftDto> getShiftsByWorker(UUID workerId);
 }

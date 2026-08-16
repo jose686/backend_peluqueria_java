@@ -1,6 +1,5 @@
 package com.peluqueria.backend.staff.services;
 
-import com.peluqueria.backend.appointments.dtos.AppointmentDto;
 import com.peluqueria.backend.appointments.entities.Appointment;
 import com.peluqueria.backend.appointments.entities.AppointmentStatus;
 import com.peluqueria.backend.appointments.repositories.AppointmentRepository;
@@ -17,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -39,7 +40,6 @@ public class AvailabilityServiceImpl implements AvailabilityService {
     @Override
     @Transactional(readOnly = true)
     public List<AvailabilityBlockDto> getAvailabilityGrid(UUID employeeId, LocalDate date) {
-        // Buscar el trabajador por UserAccount ID, o por ID de trabajador directo
         Worker worker = workerRepository.findByUserAccountId(employeeId)
                 .orElseGet(() -> workerRepository.findById(employeeId)
                         .orElseThrow(() -> new IllegalArgumentException("Trabajador no encontrado con ID: " + employeeId)));
@@ -52,6 +52,22 @@ public class AvailabilityServiceImpl implements AvailabilityService {
 
         LocalTime start = LocalTime.of(9, 0);
         LocalTime end = LocalTime.of(20, 0);
+
+        if (!shifts.isEmpty()) {
+            LocalTime minStart = null;
+            LocalTime maxEnd = null;
+            for (Shift s : shifts) {
+                if (minStart == null || s.getHoraInicio().isBefore(minStart)) {
+                    minStart = s.getHoraInicio();
+                }
+                if (maxEnd == null || s.getHoraFin().isAfter(maxEnd)) {
+                    maxEnd = s.getHoraFin();
+                }
+            }
+            if (minStart != null) start = minStart;
+            if (maxEnd != null) end = maxEnd;
+        }
+
         LocalTime cursor = start;
 
         while (cursor.isBefore(end)) {
@@ -100,6 +116,7 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                     blockStart,
                     blockEnd,
                     disponible,
+                    isBreak,
                     matchingAppointment != null ? AvailabilityBlockDto.AppointmentAdminDto.fromEntity(matchingAppointment) : null
             ));
 
@@ -107,5 +124,17 @@ public class AvailabilityServiceImpl implements AvailabilityService {
         }
 
         return grid;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<LocalDate, List<AvailabilityBlockDto>> getAvailabilityGridRange(UUID employeeId, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, List<AvailabilityBlockDto>> map = new LinkedHashMap<>();
+        LocalDate current = startDate;
+        while (!current.isAfter(endDate)) {
+            map.put(current, getAvailabilityGrid(employeeId, current));
+            current = current.plusDays(1);
+        }
+        return map;
     }
 }

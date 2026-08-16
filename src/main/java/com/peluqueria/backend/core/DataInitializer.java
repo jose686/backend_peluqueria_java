@@ -118,15 +118,6 @@ public class DataInitializer implements CommandLineRunner {
                     .horaFin(LocalTime.of(14, 0))
                     .build();
             shiftManana = shiftRepository.save(shiftManana);
-
-            // Turno de tarde hoy
-            Shift shiftTarde = Shift.builder()
-                    .worker(worker)
-                    .fecha(LocalDate.now())
-                    .horaInicio(LocalTime.of(17, 0))
-                    .horaFin(LocalTime.of(20, 0))
-                    .build();
-            shiftRepository.save(shiftTarde);
         }
     }
 }

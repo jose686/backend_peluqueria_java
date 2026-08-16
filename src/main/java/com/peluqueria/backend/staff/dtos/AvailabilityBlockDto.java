@@ -8,6 +8,7 @@ public record AvailabilityBlockDto(
     LocalTime horaInicio,
     LocalTime horaFin,
     boolean disponible,
+    boolean descanso,
     AppointmentAdminDto appointment
 ) {
     public record AppointmentAdminDto(
@@ -51,7 +52,7 @@ public record AvailabilityBlockDto(
                 appointment.getId(),
                 fechaHora,
                 appointment.getEstado().name(),
-                "", // No hay campo 'notas' en la entidad, pasamos vacío
+                "", // No hay campo 'notas' en la entidad
                 cliente,
                 servicio
             );

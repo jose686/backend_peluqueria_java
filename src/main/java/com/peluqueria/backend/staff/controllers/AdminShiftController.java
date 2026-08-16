@@ -82,4 +82,42 @@ public class AdminShiftController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    @PostMapping("/copy-week")
+    public ResponseEntity<?> copyWeek(
+            @RequestParam String fromStart,
+            @RequestParam String toStart) {
+        try {
+            java.time.LocalDate from = java.time.LocalDate.parse(fromStart);
+            java.time.LocalDate to = java.time.LocalDate.parse(toStart);
+            shiftService.copyWeek(from, to);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Semana copiada con éxito");
+            return ResponseEntity.ok(response);
+        } catch (Exception ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", ex.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PostMapping("/copy-worker-shifts")
+    public ResponseEntity<?> copyWorkerShifts(
+            @RequestParam UUID fromWorkerId,
+            @RequestParam UUID toWorkerId,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        try {
+            java.time.LocalDate start = java.time.LocalDate.parse(startDate);
+            java.time.LocalDate end = java.time.LocalDate.parse(endDate);
+            shiftService.copyWorkerShifts(fromWorkerId, toWorkerId, start, end);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Turnos del profesional copiados con éxito");
+            return ResponseEntity.ok(response);
+        } catch (Exception ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", ex.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
 }

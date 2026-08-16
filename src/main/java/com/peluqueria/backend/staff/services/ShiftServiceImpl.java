@@ -48,6 +48,12 @@ public class ShiftServiceImpl implements ShiftService {
             }
         }
 
+        // Eliminar turnos existentes para el mismo profesional y fecha
+        List<Shift> existing = shiftRepository.findByWorkerIdAndFecha(workerId, request.fecha());
+        if (existing != null && !existing.isEmpty()) {
+            shiftRepository.deleteAll(existing);
+        }
+
         Shift shift = Shift.builder()
                 .fecha(request.fecha())
                 .horaInicio(request.horaInicio())
@@ -88,5 +94,57 @@ public class ShiftServiceImpl implements ShiftService {
             throw new IllegalArgumentException("Turno no encontrado");
         }
         shiftRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void copyWeek(LocalDate fromStart, LocalDate toStart) {
+        LocalDate targetEnd = toStart.plusDays(6);
+        List<Shift> targetShifts = shiftRepository.findByFechaBetween(toStart, targetEnd);
+        shiftRepository.deleteAll(targetShifts);
+
+        LocalDate sourceEnd = fromStart.plusDays(6);
+        List<Shift> sourceShifts = shiftRepository.findByFechaBetween(fromStart, sourceEnd);
+
+        long daysOffset = java.time.temporal.ChronoUnit.DAYS.between(fromStart, toStart);
+        for (Shift source : sourceShifts) {
+            Shift copied = Shift.builder()
+                    .worker(source.getWorker())
+                    .fecha(source.getFecha().plusDays(daysOffset))
+                    .horaInicio(source.getHoraInicio())
+                    .horaFin(source.getHoraFin())
+                    .breakStartTime(source.getBreakStartTime())
+                    .breakEndTime(source.getBreakEndTime())
+                    .build();
+            shiftRepository.save(copied);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void copyWorkerShifts(UUID fromWorkerId, UUID toWorkerId, LocalDate startDate, LocalDate endDate) {
+        Worker targetWorker = workerRepository.findById(toWorkerId)
+                .orElseThrow(() -> new IllegalArgumentException("Trabajador de destino no encontrado"));
+
+        List<Shift> targetShifts = shiftRepository.findByWorkerId(toWorkerId).stream()
+                .filter(s -> !s.getFecha().isBefore(startDate) && !s.getFecha().isAfter(endDate))
+                .collect(Collectors.toList());
+        shiftRepository.deleteAll(targetShifts);
+
+        List<Shift> sourceShifts = shiftRepository.findByWorkerId(fromWorkerId).stream()
+                .filter(s -> !s.getFecha().isBefore(startDate) && !s.getFecha().isAfter(endDate))
+                .collect(Collectors.toList());
+
+        for (Shift source : sourceShifts) {
+            Shift copied = Shift.builder()
+                    .worker(targetWorker)
+                    .fecha(source.getFecha())
+                    .horaInicio(source.getHoraInicio())
+                    .horaFin(source.getHoraFin())
+                    .breakStartTime(source.getBreakStartTime())
+                    .breakEndTime(source.getBreakEndTime())
+                    .build();
+            shiftRepository.save(copied);
+        }
     }
 }

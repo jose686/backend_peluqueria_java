@@ -7,6 +7,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
+import java.util.Optional;
+
 @Repository
 public interface WorkerRepository extends JpaRepository<Worker, UUID> {
+    Optional<Worker> findByUserAccountId(UUID userAccountId);
 }

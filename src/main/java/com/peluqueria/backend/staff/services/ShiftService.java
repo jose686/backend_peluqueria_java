@@ -15,4 +15,8 @@ public interface ShiftService {
     List<ShiftDto> getShiftsByWeek(LocalDate start);
 
     void deleteShift(UUID id);
+
+    void copyWeek(LocalDate fromStart, LocalDate toStart);
+
+    void copyWorkerShifts(UUID fromWorkerId, UUID toWorkerId, LocalDate startDate, LocalDate endDate);
 }

@@ -11,5 +11,6 @@ import java.util.UUID;
 @Repository
 public interface AppointmentOtpRepository extends JpaRepository<AppointmentOtp, UUID> {
     Optional<AppointmentOtp> findFirstByTelefonoAndVerificadoFalseAndExpiracionAfterOrderByExpiracionDesc(String telefono, java.time.LocalDateTime now);
+    Optional<AppointmentOtp> findFirstByTelefonoAndPinAndVerificadoTrueAndExpiracionAfterOrderByExpiracionDesc(String telefono, String pin, java.time.LocalDateTime now);
     List<AppointmentOtp> findByTelefonoAndVerificadoFalse(String telefono);
 }

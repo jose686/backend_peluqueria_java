@@ -262,9 +262,21 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional
     public boolean verifyOtp(String telefono, String pin) {
+        if (pin == null) {
+            throw new IllegalArgumentException("El código PIN no puede ser nulo.");
+        }
+        String cleanPin = pin.trim().replaceAll("\\D", "");
         String normalized = normalizeTelefono(telefono);
         LocalDateTime now = LocalDateTime.now();
 
+        // 1. Si ya existe un OTP verificado recientemente y sigue vigente, lo tomamos como sesión válida
+        Optional<AppointmentOtp> activeSession = otpRepository
+                .findFirstByTelefonoAndPinAndVerificadoTrueAndExpiracionAfterOrderByExpiracionDesc(normalized, cleanPin, now);
+        if (activeSession.isPresent()) {
+            return true;
+        }
+
+        // 2. Si no, verificamos un OTP pendiente
         AppointmentOtp otp = otpRepository
                 .findFirstByTelefonoAndVerificadoFalseAndExpiracionAfterOrderByExpiracionDesc(normalized, now)
                 .orElseThrow(() -> new IllegalArgumentException("Código PIN no válido o expirado. Solicite uno nuevo."));
@@ -275,14 +287,16 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new IllegalArgumentException("Código bloqueado por superar los 3 intentos fallidos. Solicite uno nuevo.");
         }
 
-        if (otp.getPin().equals(pin)) {
+        String cleanOtpPin = otp.getPin().trim().replaceAll("\\D", "");
+        if (cleanOtpPin.equals(cleanPin)) {
             otp.setVerificado(true); // Se marca como consumido inmediatamente (un solo uso)
+            otp.setExpiracion(LocalDateTime.now().plusMinutes(15)); // Extendemos vigencia para que sirva de sesión por 15m
             otpRepository.save(otp);
             return true;
         } else {
             otp.setIntentos(otp.getIntentos() + 1);
             if (otp.getIntentos() >= 3) {
-                otp.setExpiracion(LocalDateTime.now()); // Invalidar
+                otp.setExpiracion(LocalDateTime.now()); // Invalidar por intentos
             }
             otpRepository.save(otp);
             throw new IllegalArgumentException("Código PIN incorrecto.");

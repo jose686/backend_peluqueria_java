@@ -74,4 +74,9 @@ public interface AppointmentService {
      * Obtiene el listado completo de citas de la base de datos (con fines de auditoria/administracion).
      */
     List<AppointmentDto> getAllAppointments();
+
+    /**
+     * Actualiza el estado de una cita en el sistema.
+     */
+    AppointmentDto updateAppointmentStatus(UUID id, com.peluqueria.backend.appointments.entities.AppointmentStatus status);
 }

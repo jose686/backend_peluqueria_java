@@ -77,6 +77,21 @@ public class AppointmentController {
         return ResponseEntity.ok(dtos);
     }
 
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateAppointmentStatus(
+            @PathVariable UUID id,
+            @RequestParam com.peluqueria.backend.appointments.entities.AppointmentStatus estado) {
+        try {
+            AppointmentDto dto = appointmentService.updateAppointmentStatus(id, estado);
+            return ResponseEntity.ok(dto);
+        } catch (IllegalArgumentException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", ex.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     /**
      * Endpoint para obtener el detalle de una cita por su identificador.
      */

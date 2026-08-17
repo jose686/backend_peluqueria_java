@@ -408,5 +408,15 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    public AppointmentDto updateAppointmentStatus(UUID id, com.peluqueria.backend.appointments.entities.AppointmentStatus status) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada"));
+        appointment.setEstado(status);
+        Appointment saved = appointmentRepository.save(appointment);
+        return AppointmentDto.fromEntity(saved);
+    }
+
     private record TimeBlock(LocalTime start, LocalTime end) {}
 }

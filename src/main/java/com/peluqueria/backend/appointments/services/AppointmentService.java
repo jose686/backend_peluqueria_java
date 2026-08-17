@@ -69,4 +69,9 @@ public interface AppointmentService {
      * Elimina permanentemente una cita por su identificador único.
      */
     void deleteAppointment(UUID id);
+
+    /**
+     * Obtiene el listado completo de citas de la base de datos (con fines de auditoria/administracion).
+     */
+    List<AppointmentDto> getAllAppointments();
 }

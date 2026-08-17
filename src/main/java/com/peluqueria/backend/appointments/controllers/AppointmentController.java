@@ -70,6 +70,13 @@ public class AppointmentController {
         return ResponseEntity.ok(dtos);
     }
 
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AppointmentDto>> getAllAppointmentsForAdmin() {
+        List<AppointmentDto> dtos = appointmentService.getAllAppointments();
+        return ResponseEntity.ok(dtos);
+    }
+
     /**
      * Endpoint para obtener el detalle de una cita por su identificador.
      */

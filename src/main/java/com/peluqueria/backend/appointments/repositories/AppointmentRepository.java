@@ -16,4 +16,5 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
     List<Appointment> findByWorkerId(UUID workerId);
     List<Appointment> findByWorkerIdAndFecha(UUID workerId, LocalDate fecha);
     List<Appointment> findByWorkerIdAndFechaAndEstadoNot(UUID workerId, LocalDate fecha, AppointmentStatus estado);
+    List<Appointment> findByCustomerTelefonoAndFechaGreaterThanEqualAndEstadoNot(String telefono, LocalDate fecha, AppointmentStatus estado);
 }

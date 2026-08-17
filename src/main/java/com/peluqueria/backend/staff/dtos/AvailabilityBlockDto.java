@@ -31,15 +31,26 @@ public record AvailabilityBlockDto(
             }
             String fechaHora = appointment.getFecha().toString() + "T" + timeStr;
 
-            String apellidos = appointment.getUser().getApellidos();
-            String nombreCompleto = appointment.getUser().getNombre() + (apellidos != null && !apellidos.isEmpty() ? " " + apellidos : "");
-
-            ClienteDto cliente = new ClienteDto(
-                appointment.getUser().getId(),
-                nombreCompleto,
-                appointment.getUser().getEmail(),
-                appointment.getUser().getTelefono()
-            );
+            ClienteDto cliente;
+            if (appointment.getUser() != null) {
+                String apellidos = appointment.getUser().getApellidos();
+                String nombreCompleto = appointment.getUser().getNombre() + (apellidos != null && !apellidos.isEmpty() ? " " + apellidos : "");
+                cliente = new ClienteDto(
+                    appointment.getUser().getId(),
+                    nombreCompleto,
+                    appointment.getUser().getEmail(),
+                    appointment.getUser().getTelefono()
+                );
+            } else if (appointment.getCustomer() != null) {
+                cliente = new ClienteDto(
+                    appointment.getCustomer().getId(),
+                    appointment.getCustomer().getNombre(),
+                    "",
+                    appointment.getCustomer().getTelefono()
+                );
+            } else {
+                cliente = new ClienteDto(null, "Cliente Invitado", "", "");
+            }
 
             ServicioDto servicio = new ServicioDto(
                 appointment.getServiceItem().getId(),

@@ -42,12 +42,17 @@ public class Appointment {
     @Builder.Default
     private AppointmentStatus estado = AppointmentStatus.PENDIENTE;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private UserAccount user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Customer customer;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)

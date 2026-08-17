@@ -17,6 +17,13 @@ import com.peluqueria.backend.users.entities.Role;
 import com.peluqueria.backend.users.entities.UserAccount;
 import com.peluqueria.backend.users.repositories.UserAccountRepository;
 
+import com.peluqueria.backend.appointments.entities.Customer;
+import com.peluqueria.backend.appointments.entities.AppointmentOtp;
+import com.peluqueria.backend.appointments.repositories.CustomerRepository;
+import com.peluqueria.backend.appointments.repositories.AppointmentOtpRepository;
+import com.peluqueria.backend.appointments.dtos.PublicBookRequest;
+import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,18 +40,27 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final ServiceItemRepository serviceItemRepository;
     private final ShiftRepository shiftRepository;
     private final UserAccountRepository userRepository;
+    private final CustomerRepository customerRepository;
+    private final AppointmentOtpRepository otpRepository;
+    private final NotificationSenderService notificationSenderService;
 
     @Autowired
     public AppointmentServiceImpl(AppointmentRepository appointmentRepository,
                                   WorkerRepository workerRepository,
                                   ServiceItemRepository serviceItemRepository,
                                   ShiftRepository shiftRepository,
-                                  UserAccountRepository userRepository) {
+                                  UserAccountRepository userRepository,
+                                  CustomerRepository customerRepository,
+                                  AppointmentOtpRepository otpRepository,
+                                  NotificationSenderService notificationSenderService) {
         this.appointmentRepository = appointmentRepository;
         this.workerRepository = workerRepository;
         this.serviceItemRepository = serviceItemRepository;
         this.shiftRepository = shiftRepository;
         this.userRepository = userRepository;
+        this.customerRepository = customerRepository;
+        this.otpRepository = otpRepository;
+        this.notificationSenderService = notificationSenderService;
     }
 
     @Override
@@ -111,6 +127,19 @@ public class AppointmentServiceImpl implements AppointmentService {
         availableSlots.sort(Comparator.naturalOrder());
 
         return new AvailableSlotsResponse(availableSlots);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<LocalDate, Boolean> getAvailableDaysRange(UUID workerId, UUID serviceItemId, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, Boolean> result = new HashMap<>();
+        LocalDate cursor = startDate;
+        while (!cursor.isAfter(endDate)) {
+            AvailableSlotsResponse slots = getAvailableSlots(workerId, serviceItemId, cursor);
+            result.put(cursor, !slots.horasDisponibles().isEmpty());
+            cursor = cursor.plusDays(1);
+        }
+        return result;
     }
 
     @Override
@@ -191,6 +220,164 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada"));
         appointmentRepository.delete(appointment);
+    }
+
+    private String normalizeTelefono(String telefono) {
+        if (telefono == null) return null;
+        String clean = telefono.replaceAll("[\\s\\-\\(\\)]", "");
+        if (!clean.startsWith("+")) {
+            if (clean.length() == 9) {
+                return "+34" + clean;
+            }
+        }
+        return clean;
+    }
+
+    @Override
+    @Transactional
+    public void sendOtp(String telefono) {
+        String normalized = normalizeTelefono(telefono);
+        
+        // Invalida los anteriores para el mismo teléfono
+        List<AppointmentOtp> oldOtps = otpRepository.findByTelefonoAndVerificadoFalse(normalized);
+        for (AppointmentOtp old : oldOtps) {
+            old.setExpiracion(LocalDateTime.now().minusSeconds(1));
+        }
+        otpRepository.saveAll(oldOtps);
+
+        // Genera PIN de 6 dígitos
+        String pin = String.format("%06d", new Random().nextInt(1000000));
+        AppointmentOtp otp = AppointmentOtp.builder()
+                .telefono(normalized)
+                .pin(pin)
+                .expiracion(LocalDateTime.now().plusMinutes(10))
+                .intentos(0)
+                .verificado(false)
+                .build();
+        otpRepository.save(otp);
+
+        notificationSenderService.sendOtp(normalized, pin);
+    }
+
+    @Override
+    @Transactional
+    public boolean verifyOtp(String telefono, String pin) {
+        String normalized = normalizeTelefono(telefono);
+        LocalDateTime now = LocalDateTime.now();
+
+        AppointmentOtp otp = otpRepository
+                .findFirstByTelefonoAndVerificadoFalseAndExpiracionAfterOrderByExpiracionDesc(normalized, now)
+                .orElseThrow(() -> new IllegalArgumentException("Código PIN no válido o expirado. Solicite uno nuevo."));
+
+        if (otp.getIntentos() >= 3) {
+            otp.setExpiracion(LocalDateTime.now());
+            otpRepository.save(otp);
+            throw new IllegalArgumentException("Código bloqueado por superar los 3 intentos fallidos. Solicite uno nuevo.");
+        }
+
+        if (otp.getPin().equals(pin)) {
+            otp.setVerificado(true); // Se marca como consumido inmediatamente (un solo uso)
+            otpRepository.save(otp);
+            return true;
+        } else {
+            otp.setIntentos(otp.getIntentos() + 1);
+            if (otp.getIntentos() >= 3) {
+                otp.setExpiracion(LocalDateTime.now()); // Invalidar
+            }
+            otpRepository.save(otp);
+            throw new IllegalArgumentException("Código PIN incorrecto.");
+        }
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDto createPublicAppointment(PublicBookRequest request) {
+        String normalized = normalizeTelefono(request.telefono());
+
+        // Validar y consumir el OTP
+        verifyOtp(normalized, request.pin());
+
+        Worker worker = workerRepository.findById(request.workerId())
+                .orElseThrow(() -> new IllegalArgumentException("Trabajador no encontrado"));
+
+        ServiceItem service = serviceItemRepository.findById(request.serviceItemId())
+                .orElseThrow(() -> new IllegalArgumentException("Servicio no encontrado"));
+
+        LocalTime horaFin = request.horaInicio().plusMinutes(service.getDuracionMinutos());
+
+        AvailableSlotsResponse available = getAvailableSlots(
+                request.workerId(), request.serviceItemId(), request.fecha());
+
+        if (!available.horasDisponibles().contains(request.horaInicio())) {
+            throw new IllegalArgumentException("El horario seleccionado ya no está disponible");
+        }
+
+        // Buscar o crear Customer
+        Customer customer = customerRepository.findByTelefono(normalized)
+                .orElse(null);
+
+        if (customer == null) {
+            customer = Customer.builder()
+                    .nombre(request.nombre())
+                    .telefono(normalized)
+                    .build();
+        } else {
+            customer.setNombre(request.nombre()); // Actualizar nombre si cambia
+        }
+        customer = customerRepository.save(customer);
+
+        Appointment appointment = Appointment.builder()
+                .customer(customer)
+                .worker(worker)
+                .serviceItem(service)
+                .fecha(request.fecha())
+                .horaInicio(request.horaInicio())
+                .horaFin(horaFin)
+                .estado(AppointmentStatus.PENDIENTE)
+                .build();
+
+        Appointment saved = appointmentRepository.save(appointment);
+        notificationSenderService.sendAppointmentConfirmation(saved);
+        
+        return AppointmentDto.fromEntity(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AppointmentDto> getAppointmentsByCustomerPhone(String telefono, String pin) {
+        String normalized = normalizeTelefono(telefono);
+        
+        // Validar OTP
+        verifyOtp(normalized, pin);
+
+        // Obtener citas futuras activas del cliente
+        LocalDate hoy = LocalDate.now();
+        List<Appointment> list = appointmentRepository
+                .findByCustomerTelefonoAndFechaGreaterThanEqualAndEstadoNot(normalized, hoy, AppointmentStatus.CANCELADA);
+
+        return list.stream()
+                .map(AppointmentDto::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDto cancelPublicAppointment(UUID id, String telefono, String pin) {
+        String normalized = normalizeTelefono(telefono);
+
+        // Validar OTP
+        verifyOtp(normalized, pin);
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada"));
+
+        if (appointment.getCustomer() == null || !appointment.getCustomer().getTelefono().equals(normalized)) {
+            throw new IllegalArgumentException("No tienes permiso para cancelar esta cita.");
+        }
+
+        appointment.setEstado(AppointmentStatus.CANCELADA);
+        Appointment saved = appointmentRepository.save(appointment);
+        return AppointmentDto.fromEntity(saved);
     }
 
     private record TimeBlock(LocalTime start, LocalTime end) {}

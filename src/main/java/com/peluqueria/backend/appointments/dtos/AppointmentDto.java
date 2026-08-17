@@ -2,7 +2,7 @@ package com.peluqueria.backend.appointments.dtos;
 
 import com.peluqueria.backend.appointments.entities.Appointment;
 
-
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -18,7 +18,10 @@ public record AppointmentDto(
     LocalTime horaFin,
     String estado,
     String clienteNombre,
-    String clienteTelefono
+    String clienteTelefono,
+    String workerName,
+    String serviceName,
+    BigDecimal precio
 ) {
     public static AppointmentDto fromEntity(Appointment appointment) {
         if (appointment == null) return null;
@@ -38,6 +41,10 @@ public record AppointmentDto(
             telefono = appointment.getCustomer().getTelefono();
         }
 
+        String workerName = appointment.getWorker() != null ? appointment.getWorker().getNombre() : "Sin asignar";
+        String serviceName = appointment.getServiceItem() != null ? appointment.getServiceItem().getNombre() : "Sin servicio";
+        BigDecimal precio = appointment.getServiceItem() != null ? appointment.getServiceItem().getPrecio() : BigDecimal.ZERO;
+
         return new AppointmentDto(
             appointment.getId(),
             userId,
@@ -49,7 +56,10 @@ public record AppointmentDto(
             appointment.getHoraFin(),
             appointment.getEstado().name(),
             nombre,
-            telefono
+            telefono,
+            workerName,
+            serviceName,
+            precio
         );
     }
 }

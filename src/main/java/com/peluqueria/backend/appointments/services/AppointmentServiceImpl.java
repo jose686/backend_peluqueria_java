@@ -183,6 +183,12 @@ public class AppointmentServiceImpl implements AppointmentService {
         UserAccount user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
+        if (user.getRole() == com.peluqueria.backend.users.entities.Role.ADMIN) {
+            return appointmentRepository.findAll().stream()
+                    .map(AppointmentDto::fromEntity)
+                    .toList();
+        }
+
         return appointmentRepository.findByUserId(user.getId()).stream()
                 .map(AppointmentDto::fromEntity)
                 .toList();

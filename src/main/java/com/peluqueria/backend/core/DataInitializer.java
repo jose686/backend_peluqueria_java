@@ -207,7 +207,7 @@ public class DataInitializer implements CommandLineRunner {
                         .horaFin(LocalTime.of(10, 30))
                         .worker(workerAna)
                         .serviceItem(corte)
-                        .estado(AppointmentStatus.CONFIRMADA)
+                        .estado(AppointmentStatus.PENDIENTE)
                         .customer(silvia)
                         .build());
             }
@@ -220,7 +220,7 @@ public class DataInitializer implements CommandLineRunner {
                         .horaFin(LocalTime.of(12, 0))
                         .worker(workerCarlos)
                         .serviceItem(corte)
-                        .estado(AppointmentStatus.CONFIRMADA)
+                        .estado(AppointmentStatus.PENDIENTE)
                         .customer(joseR)
                         .build());
             }
@@ -233,7 +233,7 @@ public class DataInitializer implements CommandLineRunner {
                         .horaFin(LocalTime.of(17, 30))
                         .worker(workerAna)
                         .serviceItem(mechas)
-                        .estado(AppointmentStatus.CONFIRMADA)
+                        .estado(AppointmentStatus.PENDIENTE)
                         .user(clienteUser)
                         .build());
             }

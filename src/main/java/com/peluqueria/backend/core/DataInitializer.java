@@ -210,9 +210,9 @@ public class DataInitializer implements CommandLineRunner {
                     .userAccount(workerAccountCarlos)
                     .build());
 
-            // Turnos dinámicos recurrentes para los próximos 30 días
+            // Turnos dinámicos recurrentes para los próximos 90 días (3 meses)
             LocalDate startDate = LocalDate.now();
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < 90; i++) {
                 LocalDate currentDate = startDate.plusDays(i);
                 if (currentDate.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
                     continue; // Peluquería cerrada los domingos

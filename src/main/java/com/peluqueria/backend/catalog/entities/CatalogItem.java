@@ -54,9 +54,8 @@ public class CatalogItem {
     @JoinColumn(name = "portada_id")
     private MediaFile portada;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categoria_id", nullable = false)
+    @JoinColumn(name = "categoria_id", nullable = true)
     private Category categoria;
 
     @Builder.Default

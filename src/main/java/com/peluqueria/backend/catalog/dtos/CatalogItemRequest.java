@@ -26,7 +26,6 @@ public record CatalogItemRequest(
 
     Long portadaId,
 
-    @NotNull(message = "La categoría es obligatoria")
     Long categoriaId,
 
     Boolean activo

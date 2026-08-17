@@ -15,6 +15,13 @@ import com.peluqueria.backend.appointments.entities.Customer;
 import com.peluqueria.backend.appointments.repositories.AppointmentRepository;
 import com.peluqueria.backend.appointments.repositories.CustomerRepository;
 
+import com.peluqueria.backend.catalog.entities.Category;
+import com.peluqueria.backend.catalog.entities.CategoryType;
+import com.peluqueria.backend.catalog.entities.CatalogItem;
+import com.peluqueria.backend.catalog.entities.CatalogType;
+import com.peluqueria.backend.catalog.repositories.CategoryRepository;
+import com.peluqueria.backend.catalog.repositories.CatalogItemRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,6 +42,8 @@ public class DataInitializer implements CommandLineRunner {
     private final ShiftRepository shiftRepository;
     private final CustomerRepository customerRepository;
     private final AppointmentRepository appointmentRepository;
+    private final CategoryRepository categoryRepository;
+    private final CatalogItemRepository catalogItemRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -44,6 +53,8 @@ public class DataInitializer implements CommandLineRunner {
                            ShiftRepository shiftRepository,
                            CustomerRepository customerRepository,
                            AppointmentRepository appointmentRepository,
+                           CategoryRepository categoryRepository,
+                           CatalogItemRepository catalogItemRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.serviceItemRepository = serviceItemRepository;
@@ -51,6 +62,8 @@ public class DataInitializer implements CommandLineRunner {
         this.shiftRepository = shiftRepository;
         this.customerRepository = customerRepository;
         this.appointmentRepository = appointmentRepository;
+        this.categoryRepository = categoryRepository;
+        this.catalogItemRepository = catalogItemRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -80,7 +93,69 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
         }
 
-        // 2. Seed ServiceItems
+        // 2. Seed Categories
+        Category peluqueriaCat = null;
+        Category coloracionCat = null;
+        Category tratamientosCat = null;
+        Category productosCat = null;
+
+        if (categoryRepository.count() == 0) {
+            peluqueriaCat = categoryRepository.save(Category.builder()
+                    .nombre("Peluquería")
+                    .tipo(CategoryType.CATALOGO)
+                    .build());
+            coloracionCat = categoryRepository.save(Category.builder()
+                    .nombre("Coloración")
+                    .tipo(CategoryType.CATALOGO)
+                    .build());
+            tratamientosCat = categoryRepository.save(Category.builder()
+                    .nombre("Tratamientos")
+                    .tipo(CategoryType.CATALOGO)
+                    .build());
+            productosCat = categoryRepository.save(Category.builder()
+                    .nombre("Productos")
+                    .tipo(CategoryType.CATALOGO)
+                    .build());
+        } else {
+            peluqueriaCat = categoryRepository.findBySlug("peluquería").orElse(null);
+            if (peluqueriaCat == null) peluqueriaCat = categoryRepository.findBySlug("peluqueria").orElse(null);
+            coloracionCat = categoryRepository.findBySlug("coloración").orElse(null);
+            if (coloracionCat == null) coloracionCat = categoryRepository.findBySlug("coloracion").orElse(null);
+            tratamientosCat = categoryRepository.findBySlug("tratamientos").orElse(null);
+            productosCat = categoryRepository.findBySlug("productos").orElse(null);
+        }
+
+        // 3. Seed CatalogItems
+        if (catalogItemRepository.count() == 0) {
+            catalogItemRepository.save(CatalogItem.builder()
+                    .nombre("Corte de Pelo")
+                    .precio(new BigDecimal("18.50"))
+                    .tipo(CatalogType.SERVICIO)
+                    .duracionMinutos(30)
+                    .categoria(peluqueriaCat)
+                    .activo(true)
+                    .build());
+
+            catalogItemRepository.save(CatalogItem.builder()
+                    .nombre("Mechas Balayage")
+                    .precio(new BigDecimal("55.00"))
+                    .tipo(CatalogType.SERVICIO)
+                    .duracionMinutos(90)
+                    .categoria(coloracionCat)
+                    .activo(true)
+                    .build());
+
+            catalogItemRepository.save(CatalogItem.builder()
+                    .nombre("Peinado")
+                    .precio(new BigDecimal("25.00"))
+                    .tipo(CatalogType.SERVICIO)
+                    .duracionMinutos(45)
+                    .categoria(peluqueriaCat)
+                    .activo(true)
+                    .build());
+        }
+
+        // 4. Seed ServiceItems
         if (serviceItemRepository.count() == 0) {
             serviceItemRepository.save(ServiceItem.builder()
                     .nombre("Corte de Pelo")

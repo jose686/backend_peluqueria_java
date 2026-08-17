@@ -50,11 +50,13 @@ public class CatalogItemServiceImpl implements CatalogItemService {
             throw new IllegalArgumentException("Ya existe un artículo del catálogo con ese nombre o slug");
         }
 
-        Category category = categoryRepository.findById(request.categoriaId())
-                .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
-
-        if (category.getTipo() != CategoryType.CATALOGO) {
-            throw new IllegalArgumentException("La categoría seleccionada debe ser de tipo CATALOGO");
+        Category category = null;
+        if (request.categoriaId() != null) {
+            category = categoryRepository.findById(request.categoriaId())
+                    .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
+            if (category.getTipo() != CategoryType.CATALOGO) {
+                throw new IllegalArgumentException("La categoría seleccionada debe ser de tipo CATALOGO");
+            }
         }
 
         MediaFile portada = null;
@@ -99,11 +101,13 @@ public class CatalogItemServiceImpl implements CatalogItemService {
             throw new IllegalArgumentException("Ya existe otro artículo del catálogo con ese nombre o slug");
         }
 
-        Category category = categoryRepository.findById(request.categoriaId())
-                .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
-
-        if (category.getTipo() != CategoryType.CATALOGO) {
-            throw new IllegalArgumentException("La categoría seleccionada debe ser de tipo CATALOGO");
+        Category category = null;
+        if (request.categoriaId() != null) {
+            category = categoryRepository.findById(request.categoriaId())
+                    .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
+            if (category.getTipo() != CategoryType.CATALOGO) {
+                throw new IllegalArgumentException("La categoría seleccionada debe ser de tipo CATALOGO");
+            }
         }
 
         MediaFile portada = null;

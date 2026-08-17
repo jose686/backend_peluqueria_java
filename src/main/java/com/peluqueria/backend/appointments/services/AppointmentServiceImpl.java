@@ -66,8 +66,11 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(readOnly = true)
     public AvailableSlotsResponse getAvailableSlots(UUID workerId, UUID serviceItemId, LocalDate fecha) {
-        ServiceItem service = serviceItemRepository.findById(serviceItemId)
-                .orElseThrow(() -> new IllegalArgumentException("Servicio no encontrado"));
+        java.util.Optional<ServiceItem> serviceOpt = serviceItemRepository.findById(serviceItemId);
+        if (serviceOpt.isEmpty()) {
+            return new AvailableSlotsResponse(Collections.emptyList());
+        }
+        ServiceItem service = serviceOpt.get();
         int duracion = service.getDuracionMinutos();
 
         Worker worker = workerRepository.findById(workerId)

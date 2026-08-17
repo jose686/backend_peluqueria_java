@@ -79,4 +79,9 @@ public interface AppointmentService {
      * Actualiza el estado de una cita en el sistema.
      */
     AppointmentDto updateAppointmentStatus(UUID id, com.peluqueria.backend.appointments.entities.AppointmentStatus status);
+
+    /**
+     * Obtiene las citas con estado COMPLETADA para el historial de facturación.
+     */
+    List<AppointmentDto> getCompletedAppointments();
 }

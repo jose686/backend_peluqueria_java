@@ -421,5 +421,12 @@ public class AppointmentServiceImpl implements AppointmentService {
         return AppointmentDto.fromEntity(saved);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<AppointmentDto> getCompletedAppointments() {
+        return appointmentRepository.findByEstado(AppointmentStatus.COMPLETADA)
+                .stream().map(AppointmentDto::fromEntity).toList();
+    }
+
     private record TimeBlock(LocalTime start, LocalTime end) {}
 }

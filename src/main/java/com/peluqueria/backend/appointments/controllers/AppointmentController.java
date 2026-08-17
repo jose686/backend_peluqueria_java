@@ -77,6 +77,13 @@ public class AppointmentController {
         return ResponseEntity.ok(dtos);
     }
 
+    @GetMapping("/admin/history")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AppointmentDto>> getCompletedAppointments() {
+        List<AppointmentDto> dtos = appointmentService.getCompletedAppointments();
+        return ResponseEntity.ok(dtos);
+    }
+
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateAppointmentStatus(

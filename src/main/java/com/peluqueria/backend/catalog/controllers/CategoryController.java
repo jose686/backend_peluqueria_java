@@ -8,6 +8,7 @@ import com.peluqueria.backend.catalog.services.CategoryService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +36,7 @@ public class CategoryController {
     public ResponseEntity<?> createCategory(@Valid @RequestBody CategoryDto request) {
         try {
             Category category = categoryService.createCategory(request);
-            return ResponseEntity.ok(CategoryDto.fromEntity(category));
+            return ResponseEntity.status(HttpStatus.CREATED).body(CategoryDto.fromEntity(category));
         } catch (IllegalArgumentException ex) {
             Map<String, String> response = new HashMap<>();
             response.put("error", ex.getMessage());

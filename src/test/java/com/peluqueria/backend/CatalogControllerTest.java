@@ -5,6 +5,7 @@ import com.peluqueria.backend.catalog.entities.Category;
 import com.peluqueria.backend.catalog.entities.CategoryType;
 import com.peluqueria.backend.catalog.repositories.CatalogItemRepository;
 import com.peluqueria.backend.catalog.repositories.CategoryRepository;
+import com.peluqueria.backend.blog.repositories.BlogPostRepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,12 +39,17 @@ public class CatalogControllerTest {
     private CategoryRepository categoryRepository;
 
     @Autowired
+    private BlogPostRepository blogPostRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     private Category testCategory;
 
     @BeforeEach
     void setUp() {
+        // Delete dependent rows before their category parents to satisfy MySQL FKs.
+        blogPostRepository.deleteAll();
         catalogItemRepository.deleteAll();
         categoryRepository.deleteAll();
 
@@ -81,7 +87,7 @@ public class CatalogControllerTest {
         mockMvc.perform(post("/api/v1/catalog")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
                 .andExpect(jsonPath("$.nombre", is("Corte Bob")))
                 .andExpect(jsonPath("$.slug", is("corte-bob-2026")))

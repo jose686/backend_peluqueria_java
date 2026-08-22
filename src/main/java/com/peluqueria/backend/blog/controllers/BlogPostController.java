@@ -8,6 +8,7 @@ import com.peluqueria.backend.blog.services.BlogPostService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -38,7 +39,7 @@ public class BlogPostController {
         try {
             String email = authentication.getName();
             BlogPost post = blogPostService.createBlogPost(request, email);
-            return ResponseEntity.ok(BlogPostDto.fromEntity(post));
+            return ResponseEntity.status(HttpStatus.CREATED).body(BlogPostDto.fromEntity(post));
         } catch (IllegalArgumentException ex) {
             Map<String, String> response = new HashMap<>();
             response.put("error", ex.getMessage());

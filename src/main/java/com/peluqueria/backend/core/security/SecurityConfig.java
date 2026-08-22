@@ -2,6 +2,7 @@ package com.peluqueria.backend.core.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -20,6 +21,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -27,9 +29,16 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final List<String> allowedOrigins;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            @Value("${app.cors.allowed-origins:http://localhost:4200}") String allowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.allowedOrigins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
     }
 
     @Bean
@@ -46,11 +55,17 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         // Public H2 Console
                         .requestMatchers("/h2-console/**").permitAll()
+                        // CORS preflight requests must not require a JWT.
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Public read-only access to blog and catalog
                         .requestMatchers(HttpMethod.GET, "/api/v1/blog/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/blog/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalog/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/media/**").permitAll()
+                        // Media resources are public; library management requires an ADMIN JWT.
+                        .requestMatchers(HttpMethod.GET, "/api/media/**", "/api/v1/media/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/media/**", "/api/v1/media/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/media/**", "/api/v1/media/**").hasRole("ADMIN")
                         // Public read-only access to services, workers, and available slots
                         .requestMatchers(HttpMethod.GET, "/api/v1/services/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/workers/**").permitAll()
@@ -69,7 +84,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
         configuration.setExposedHeaders(List.of("Authorization"));

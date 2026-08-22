@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/categories")
+@RequestMapping({"/api/categories", "/api/v1/categories"})
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -63,8 +63,12 @@ public class CategoryController {
      * Endpoint para listar todas las categorías.
      */
     @GetMapping
-    public ResponseEntity<List<CategoryDto>> getAllCategories() {
-        List<CategoryDto> categories = categoryService.getAllCategories().stream()
+    public ResponseEntity<List<CategoryDto>> getAllCategories(
+            @RequestParam(value = "type", required = false) String type) {
+        List<Category> source = type == null || type.isBlank()
+                ? categoryService.getAllCategories()
+                : categoryService.getCategoriesByTipo(CategoryType.valueOf(type.toUpperCase()));
+        List<CategoryDto> categories = source.stream()
                 .map(CategoryDto::fromEntity)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(categories);

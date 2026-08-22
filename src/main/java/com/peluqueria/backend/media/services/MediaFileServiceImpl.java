@@ -3,9 +3,12 @@ package com.peluqueria.backend.media.services;
 import com.peluqueria.backend.catalog.entities.Category;
 import com.peluqueria.backend.media.entities.FileType;
 import com.peluqueria.backend.media.entities.MediaFile;
+import com.peluqueria.backend.media.exceptions.InvalidMediaFileException;
+import com.peluqueria.backend.media.exceptions.MediaNotFoundException;
 import com.peluqueria.backend.media.repositories.MediaFileRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -20,18 +23,26 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class MediaFileServiceImpl implements MediaFileService {
 
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
+
     private final MediaFileRepository mediaFileRepository;
     private final Path fileStorageLocation;
+    private final Path legacyFileStorageLocation;
 
     @Autowired
-    public MediaFileServiceImpl(MediaFileRepository mediaFileRepository) {
+    public MediaFileServiceImpl(
+            MediaFileRepository mediaFileRepository,
+            @Value("${app.media.storage-path:uploads/media}") String storagePath) {
         this.mediaFileRepository = mediaFileRepository;
-        this.fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
+        this.fileStorageLocation = Paths.get(storagePath).toAbsolutePath().normalize();
+        this.legacyFileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
         try {
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
@@ -44,41 +55,41 @@ public class MediaFileServiceImpl implements MediaFileService {
      */
     @Transactional
     public MediaFile storeFile(MultipartFile file, String customIdentificador) {
+        if (file == null || file.isEmpty()) {
+            throw new InvalidMediaFileException("Debes seleccionar una imagen no vacía.");
+        }
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || originalFilename.contains("..")) {
-            throw new IllegalArgumentException("Nombre de archivo no válido");
+            throw new InvalidMediaFileException("Nombre de archivo no válido.");
         }
 
-        // Extract extension and generate unique name
-        String extension = "";
+        String extension;
         int i = originalFilename.lastIndexOf('.');
-        if (i > 0) {
-            extension = originalFilename.substring(i);
+        if (i <= 0 || i == originalFilename.length() - 1) {
+            throw new InvalidMediaFileException("La imagen debe tener extensión JPG, PNG o WEBP.");
         }
-        String generatedName = UUID.randomUUID().toString() + extension;
+        extension = originalFilename.substring(i + 1).toLowerCase();
+        String contentType = file.getContentType();
+        if (!ALLOWED_EXTENSIONS.contains(extension) || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new InvalidMediaFileException("Solo se permiten imágenes JPG, PNG o WEBP.");
+        }
+        String generatedName = UUID.randomUUID() + "." + extension;
+        Path targetLocation = this.fileStorageLocation.resolve(generatedName).normalize();
+        if (!targetLocation.getParent().equals(this.fileStorageLocation)) {
+            throw new InvalidMediaFileException("Ruta de archivo no válida.");
+        }
 
         try {
-            // Write file
-            Path targetLocation = this.fileStorageLocation.resolve(generatedName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
-            // Determine FileType
-            FileType fileType = FileType.IMAGE;
-            String contentType = file.getContentType();
-            if (contentType != null && contentType.startsWith("video")) {
-                fileType = FileType.VIDEO;
-            }
-
-            // Create download URL
             String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/api/v1/media/files/")
+                    .path("/api/media/")
                     .path(generatedName)
                     .toUriString();
 
             // Set unique identifier
             String identificador = customIdentificador;
             if (identificador == null || identificador.isBlank()) {
-                identificador = Category.slugify(originalFilename.replace(extension, "")) + "-" + UUID.randomUUID().toString().substring(0, 8);
+                identificador = Category.slugify(originalFilename.substring(0, i)) + "-" + UUID.randomUUID().toString().substring(0, 8);
             } else {
                 identificador = Category.slugify(identificador);
             }
@@ -86,14 +97,22 @@ public class MediaFileServiceImpl implements MediaFileService {
             MediaFile mediaFile = MediaFile.builder()
                     .identificador(identificador)
                     .filename(originalFilename)
-                    .fileType(fileType)
+                    .storedFilename(generatedName)
+                    .contentType(contentType)
+                    .size(file.getSize())
+                    .fileType(FileType.IMAGE)
                     .url(fileDownloadUri)
                     .build();
 
-            return mediaFileRepository.save(mediaFile);
+            try {
+                return mediaFileRepository.save(mediaFile);
+            } catch (RuntimeException exception) {
+                Files.deleteIfExists(targetLocation);
+                throw exception;
+            }
 
         } catch (IOException ex) {
-            throw new RuntimeException("No se pudo almacenar el archivo. Error: " + ex.getMessage(), ex);
+            throw new IllegalStateException("No se pudo almacenar la imagen.", ex);
         }
     }
 
@@ -104,14 +123,23 @@ public class MediaFileServiceImpl implements MediaFileService {
     public Resource loadFileAsResource(String fileName) {
         try {
             Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
+            if (!filePath.getParent().equals(this.fileStorageLocation)) {
+                throw new MediaNotFoundException("Imagen no encontrada.");
+            }
+            if (!Files.exists(filePath) && !this.fileStorageLocation.equals(this.legacyFileStorageLocation)) {
+                Path legacyPath = this.legacyFileStorageLocation.resolve(fileName).normalize();
+                if (legacyPath.getParent().equals(this.legacyFileStorageLocation) && Files.exists(legacyPath)) {
+                    filePath = legacyPath;
+                }
+            }
             Resource resource = new UrlResource(filePath.toUri());
-            if (resource.exists()) {
+            if (resource.exists() && resource.isReadable()) {
                 return resource;
             } else {
-                throw new RuntimeException("Archivo no encontrado: " + fileName);
+                throw new MediaNotFoundException("Imagen no encontrada.");
             }
         } catch (MalformedURLException ex) {
-            throw new RuntimeException("Archivo no encontrado: " + fileName, ex);
+            throw new MediaNotFoundException("Imagen no encontrada.");
         }
     }
 
@@ -120,7 +148,9 @@ public class MediaFileServiceImpl implements MediaFileService {
      */
     @Transactional(readOnly = true)
     public List<MediaFile> getAllMediaFiles() {
-        return mediaFileRepository.findAll();
+        return mediaFileRepository.findAll().stream()
+                .sorted((left, right) -> right.getFechaSubida().compareTo(left.getFechaSubida()))
+                .toList();
     }
 
     /**
@@ -129,7 +159,7 @@ public class MediaFileServiceImpl implements MediaFileService {
     @Transactional(readOnly = true)
     public MediaFile getMediaFileById(Long id) {
         return mediaFileRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Archivo multimedia no encontrado con id " + id));
+                .orElseThrow(() -> new MediaNotFoundException("Imagen no encontrada."));
     }
 
     /**
@@ -140,14 +170,23 @@ public class MediaFileServiceImpl implements MediaFileService {
         MediaFile mediaFile = getMediaFileById(id);
         
         // Remove physical file from disk
-        String fileDownloadUrl = mediaFile.getUrl();
-        String generatedName = fileDownloadUrl.substring(fileDownloadUrl.lastIndexOf('/') + 1);
+        String generatedName = mediaFile.getStoredFilename();
+        if (generatedName == null || generatedName.isBlank()) {
+            String fileDownloadUrl = mediaFile.getUrl();
+            generatedName = fileDownloadUrl.substring(fileDownloadUrl.lastIndexOf('/') + 1);
+        }
         Path targetLocation = this.fileStorageLocation.resolve(generatedName);
+        if (!Files.exists(targetLocation) && !this.fileStorageLocation.equals(this.legacyFileStorageLocation)) {
+            Path legacyPath = this.legacyFileStorageLocation.resolve(generatedName).normalize();
+            if (legacyPath.getParent().equals(this.legacyFileStorageLocation) && Files.exists(legacyPath)) {
+                targetLocation = legacyPath;
+            }
+        }
         
         try {
             Files.deleteIfExists(targetLocation);
         } catch (IOException ex) {
-            // Log but allow DB deletion
+            throw new IllegalStateException("No se pudo eliminar la imagen del almacenamiento.", ex);
         }
 
         mediaFileRepository.delete(mediaFile);

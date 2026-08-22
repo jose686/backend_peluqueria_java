@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface MediaFileRepository extends JpaRepository<MediaFile, Long> {
     Optional<MediaFile> findByIdentificador(String identificador);
+    Optional<MediaFile> findByStoredFilename(String storedFilename);
     Boolean existsByIdentificador(String identificador);
 }

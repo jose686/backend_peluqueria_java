@@ -15,13 +15,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/media")
+@RequestMapping({"/api/media", "/api/v1/media"})
 public class MediaFileController {
 
     private final MediaFileService mediaFileService;
@@ -39,20 +37,14 @@ public class MediaFileController {
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "identificador", required = false) String identificador) {
-        try {
-            MediaFile mediaFile = mediaFileService.storeFile(file, identificador);
-            return ResponseEntity.ok(MediaFileDto.fromEntity(mediaFile));
-        } catch (Exception ex) {
-            Map<String, String> response = new HashMap<>();
-            response.put("error", ex.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
+        MediaFile mediaFile = mediaFileService.storeFile(file, identificador);
+        return ResponseEntity.status(201).body(MediaFileDto.fromEntity(mediaFile));
     }
 
     /**
      * Endpoint para servir/descargar un archivo físico a través de su nombre.
      */
-    @GetMapping("/files/{filename:.+}")
+    @GetMapping({"/{filename:.+}", "/files/{filename:.+}"})
     public ResponseEntity<Resource> serveFile(@PathVariable String filename, HttpServletRequest request) {
         Resource resource = mediaFileService.loadFileAsResource(filename);
 
@@ -86,36 +78,12 @@ public class MediaFileController {
     }
 
     /**
-     * Endpoint para consultar detalles de un archivo por su ID (sólo accesible para administradores).
-     */
-    @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getMediaById(@PathVariable Long id) {
-        try {
-            MediaFile mediaFile = mediaFileService.getMediaFileById(id);
-            return ResponseEntity.ok(MediaFileDto.fromEntity(mediaFile));
-        } catch (IllegalArgumentException ex) {
-            Map<String, String> response = new HashMap<>();
-            response.put("error", ex.getMessage());
-            return ResponseEntity.status(404).body(response);
-        }
-    }
-
-    /**
      * Endpoint para eliminar permanentemente un archivo del sistema (sólo accesible para administradores).
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deleteMedia(@PathVariable Long id) {
-        try {
-            mediaFileService.deleteMediaFile(id);
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Archivo multimedia eliminado con éxito");
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException ex) {
-            Map<String, String> response = new HashMap<>();
-            response.put("error", ex.getMessage());
-            return ResponseEntity.status(404).body(response);
-        }
+    public ResponseEntity<Void> deleteMedia(@PathVariable Long id) {
+        mediaFileService.deleteMediaFile(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -32,10 +32,10 @@ public class BlogPost {
 
     @NotBlank
     @Lob
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(name = "contenido_html", columnDefinition = "LONGTEXT", nullable = false)
     private String contenidoHtml;
 
-    @Column(length = 500)
+    @Column(length = 350)
     private String resumen;
 
     @ManyToOne(fetch = FetchType.LAZY)

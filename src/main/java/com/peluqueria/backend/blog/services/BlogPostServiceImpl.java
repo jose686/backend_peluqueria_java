@@ -18,9 +18,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 
 @Service
 public class BlogPostServiceImpl implements BlogPostService {
+
+    private static final Safelist BLOG_HTML_SAFELIST = Safelist.relaxed()
+            .addTags("u", "s", "del", "strike", "h1", "h2", "blockquote")
+            .addAttributes("img", "src", "alt", "width", "height")
+            .addAttributes(":all", "style")
+            .addProtocols("img", "src", "http", "https");
 
     private final BlogPostRepository blogPostRepository;
     private final UserAccountRepository userRepository;
@@ -73,7 +81,7 @@ public class BlogPostServiceImpl implements BlogPostService {
         BlogPost post = BlogPost.builder()
                 .titulo(request.titulo())
                 .slug(slug)
-                .contenidoHtml(request.contenidoHtml())
+                .contenidoHtml(sanitizeHtml(request.contenidoHtml()))
                 .resumen(request.resumen())
                 .portada(portada)
                 .autor(autor)
@@ -118,7 +126,7 @@ public class BlogPostServiceImpl implements BlogPostService {
 
         post.setTitulo(request.titulo());
         post.setSlug(slug);
-        post.setContenidoHtml(request.contenidoHtml());
+        post.setContenidoHtml(sanitizeHtml(request.contenidoHtml()));
         post.setResumen(request.resumen());
         post.setPortada(portada);
         post.setCategoria(category);
@@ -164,5 +172,16 @@ public class BlogPostServiceImpl implements BlogPostService {
     public void deleteBlogPost(Long id) {
         BlogPost post = getBlogPostById(id);
         blogPostRepository.delete(post);
+    }
+
+    private String sanitizeHtml(String html) {
+        var document = Jsoup.parseBodyFragment(Jsoup.clean(html, BLOG_HTML_SAFELIST));
+        document.select("[style]").forEach(element -> {
+            String style = element.attr("style").trim();
+            if (!style.matches("(?i)text-align\\s*:\\s*(left|center|right|justify)\\s*;?")) {
+                element.removeAttr("style");
+            }
+        });
+        return document.body().html();
     }
 }

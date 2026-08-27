@@ -31,3 +31,18 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Asistentes IA
+.agent/
+.agent-skills/
+.skills/
+.agents/
+.claude/
+.cursor/
+
+# Entorno e IDEs
+.env
+.idea/
+node_modules/
+dist/
+target/

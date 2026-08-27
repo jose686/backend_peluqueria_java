@@ -1,5 +1,8 @@
 package com.peluqueria.backend.core;
 
+
+/*
+ 
 import com.peluqueria.backend.catalog.entities.ServiceItem;
 import com.peluqueria.backend.catalog.repositories.ServiceItemRepository;
 import com.peluqueria.backend.staff.entities.Shift;
@@ -315,3 +318,4 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 }
+*/

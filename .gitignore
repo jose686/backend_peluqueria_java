@@ -39,6 +39,7 @@ build/
 .agents/
 .claude/
 .cursor/
+.uploads/
 
 # Entorno e IDEs
 .env

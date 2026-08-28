@@ -51,6 +51,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public auth paths
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        // Public initial setup paths
+                        .requestMatchers("/api/v1/setup/**").permitAll()
                         // Public endpoints for decoupled OTP reservations
                         .requestMatchers("/api/public/**").permitAll()
                         // Public H2 Console

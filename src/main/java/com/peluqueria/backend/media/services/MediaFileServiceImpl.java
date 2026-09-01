@@ -149,7 +149,12 @@ public class MediaFileServiceImpl implements MediaFileService {
     @Transactional(readOnly = true)
     public List<MediaFile> getAllMediaFiles() {
         return mediaFileRepository.findAll().stream()
-                .sorted((left, right) -> right.getFechaSubida().compareTo(left.getFechaSubida()))
+                .sorted((left, right) -> {
+                    if (left.getFechaSubida() == null && right.getFechaSubida() == null) return 0;
+                    if (left.getFechaSubida() == null) return 1;
+                    if (right.getFechaSubida() == null) return -1;
+                    return right.getFechaSubida().compareTo(left.getFechaSubida());
+                })
                 .toList();
     }
 

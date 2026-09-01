@@ -73,7 +73,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalog/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         // Media resources are public; library management requires an ADMIN JWT.
-                        .requestMatchers(HttpMethod.GET, "/api/media", "/api/media/**", "/api/v1/media", "/api/v1/media/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/media/**", "/uploads/**", "/api/media/files/**", "/api/media", "/api/media/**", "/api/v1/media", "/api/v1/media/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/media", "/api/media/**", "/api/v1/media", "/api/v1/media/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/media", "/api/media/**", "/api/v1/media", "/api/v1/media/**").hasRole("ADMIN")
                         // Public read-only access to services, workers, and available slots

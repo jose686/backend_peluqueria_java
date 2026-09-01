@@ -20,7 +20,7 @@ public record MediaFileDto(
         String storedFilename = mediaFile.getStoredFilename();
         String mediaUrl = mediaFile.getUrl();
         if ((mediaUrl == null || mediaUrl.isBlank()) && storedFilename != null && !storedFilename.isBlank()) {
-            mediaUrl = "/api/media/" + storedFilename;
+            mediaUrl = "/media/" + storedFilename;
         }
         return new MediaFileDto(
             mediaFile.getId(),

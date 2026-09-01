@@ -47,3 +47,4 @@ build/
 node_modules/
 dist/
 target/
+uploads/

@@ -35,10 +35,18 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter,
             @Value("${app.cors.allowed-origins:http://localhost:4200}") String allowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.allowedOrigins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(origin -> !origin.isEmpty())
-                .toList();
+        List<String> origins = new java.util.ArrayList<>(List.of(
+                "http://localhost:4200",
+                "http://localhost:8080",
+                "https://peluqueria.joserodriguezdeveloper.com"
+        ));
+        if (allowedOrigins != null && !allowedOrigins.isBlank()) {
+            Arrays.stream(allowedOrigins.split(","))
+                    .map(String::trim)
+                    .filter(origin -> !origin.isEmpty() && !origins.contains(origin))
+                    .forEach(origins::add);
+        }
+        this.allowedOrigins = origins;
     }
 
     @Bean
@@ -88,8 +96,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Cache-Control", "*"));
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Type", "Location"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

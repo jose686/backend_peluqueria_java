@@ -23,6 +23,7 @@ import com.peluqueria.backend.appointments.repositories.CustomerRepository;
 import com.peluqueria.backend.appointments.repositories.AppointmentOtpRepository;
 import com.peluqueria.backend.appointments.dtos.PublicBookRequest;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -251,7 +252,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         // Invalida los anteriores para el mismo teléfono
         List<AppointmentOtp> oldOtps = otpRepository.findByTelefonoAndVerificadoFalse(normalized);
         for (AppointmentOtp old : oldOtps) {
-            old.setExpiracion(LocalDateTime.now().minusSeconds(1));
+            old.setExpiracion(LocalDateTime.now(ZoneId.of("UTC")).minusSeconds(1));
         }
         otpRepository.saveAll(oldOtps);
 
@@ -260,7 +261,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         AppointmentOtp otp = AppointmentOtp.builder()
                 .telefono(normalized)
                 .pin(pin)
-                .expiracion(LocalDateTime.now().plusMinutes(10))
+                .expiracion(LocalDateTime.now(ZoneId.of("UTC")).plusMinutes(15))
                 .intentos(0)
                 .verificado(false)
                 .build();
@@ -277,7 +278,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
         String cleanPin = pin.trim().replaceAll("\\D", "");
         String normalized = normalizeTelefono(telefono);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
 
         // 1. Si ya existe un OTP verificado recientemente y sigue vigente, lo tomamos como sesión válida
         Optional<AppointmentOtp> activeSession = otpRepository
@@ -292,21 +293,21 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new IllegalArgumentException("Código PIN no válido o expirado. Solicite uno nuevo."));
 
         if (otp.getIntentos() >= 3) {
-            otp.setExpiracion(LocalDateTime.now());
+            otp.setExpiracion(LocalDateTime.now(ZoneId.of("UTC")));
             otpRepository.save(otp);
             throw new IllegalArgumentException("Código bloqueado por superar los 3 intentos fallidos. Solicite uno nuevo.");
         }
 
         String cleanOtpPin = otp.getPin().trim().replaceAll("\\D", "");
         if (cleanOtpPin.equals(cleanPin)) {
-            otp.setVerificado(true); // Se marca como consumido inmediatamente (un solo uso)
-            otp.setExpiracion(LocalDateTime.now().plusMinutes(15)); // Extendemos vigencia para que sirva de sesión por 15m
+            otp.setVerificado(true); // Se marca como verificado/consumido
+            otp.setExpiracion(LocalDateTime.now(ZoneId.of("UTC")).plusMinutes(30)); // Extendemos vigencia a 30m en UTC para sesión
             otpRepository.save(otp);
             return true;
         } else {
             otp.setIntentos(otp.getIntentos() + 1);
             if (otp.getIntentos() >= 3) {
-                otp.setExpiracion(LocalDateTime.now()); // Invalidar por intentos
+                otp.setExpiracion(LocalDateTime.now(ZoneId.of("UTC"))); // Invalidar por intentos
             }
             otpRepository.save(otp);
             throw new IllegalArgumentException("Código PIN incorrecto.");

@@ -36,7 +36,7 @@ public class AppointmentController {
     @GetMapping("/available")
     public ResponseEntity<AvailableSlotsResponse> getAvailableSlots(
             @RequestParam UUID workerId,
-            @RequestParam UUID serviceItemId,
+            @RequestParam Long serviceItemId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         AvailableSlotsResponse response = appointmentService.getAvailableSlots(workerId, serviceItemId, fecha);
         return ResponseEntity.ok(response);

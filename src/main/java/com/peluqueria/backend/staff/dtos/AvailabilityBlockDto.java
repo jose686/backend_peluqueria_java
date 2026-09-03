@@ -20,7 +20,7 @@ public record AvailabilityBlockDto(
         ServicioDto servicio
     ) {
         public record ClienteDto(UUID id, String nombre, String email, String telefono) {}
-        public record ServicioDto(UUID id, String nombre, int duracionMinutos, double precio) {}
+        public record ServicioDto(Long id, String nombre, int duracionMinutos, double precio) {}
 
         public static AppointmentAdminDto fromEntity(Appointment appointment) {
             if (appointment == null) return null;
@@ -55,7 +55,7 @@ public record AvailabilityBlockDto(
             ServicioDto servicio = new ServicioDto(
                 appointment.getServiceItem().getId(),
                 appointment.getServiceItem().getNombre(),
-                appointment.getServiceItem().getDuracionMinutos(),
+                appointment.getServiceItem().getDuracionMinutos() != null ? appointment.getServiceItem().getDuracionMinutos() : 30,
                 appointment.getServiceItem().getPrecio().doubleValue()
             );
 

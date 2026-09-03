@@ -1,24 +1,22 @@
 package com.peluqueria.backend.catalog.dtos;
 
-import com.peluqueria.backend.catalog.entities.ServiceItem;
-
+import com.peluqueria.backend.catalog.entities.CatalogItem;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 public record ServiceItemDto(
-    UUID id,
+    String id,
     String nombre,
     BigDecimal precio,
     Integer duracionMinutos
 ) {
-    public static ServiceItemDto fromEntity(ServiceItem entity) {
-        if (entity == null) return null;
+    public static ServiceItemDto fromCatalogItem(CatalogItem item) {
+        if (item == null) return null;
         return new ServiceItemDto(
-            entity.getId(),
-            entity.getNombre(),
-            entity.getPrecio(),
-            entity.getDuracionMinutos()
+            item.getId() != null ? item.getId().toString() : null,
+            item.getNombre(),
+            item.getPrecio(),
+            item.getDuracionMinutos() != null ? item.getDuracionMinutos() : 30
         );
     }
 }

@@ -12,7 +12,7 @@ public record AppointmentDto(
     UUID userId,
     UUID customerId,
     UUID workerId,
-    UUID serviceItemId,
+    Long serviceItemId,
     LocalDate fecha,
     LocalTime horaInicio,
     LocalTime horaFin,

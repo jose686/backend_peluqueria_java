@@ -6,8 +6,8 @@ import com.peluqueria.backend.appointments.dtos.AvailableSlotsResponse;
 import com.peluqueria.backend.appointments.entities.Appointment;
 import com.peluqueria.backend.appointments.entities.AppointmentStatus;
 import com.peluqueria.backend.appointments.repositories.AppointmentRepository;
-import com.peluqueria.backend.catalog.entities.ServiceItem;
-import com.peluqueria.backend.catalog.repositories.ServiceItemRepository;
+import com.peluqueria.backend.catalog.entities.CatalogItem;
+import com.peluqueria.backend.catalog.repositories.CatalogItemRepository;
 import com.peluqueria.backend.staff.entities.Break;
 import com.peluqueria.backend.staff.entities.Shift;
 import com.peluqueria.backend.staff.entities.Worker;
@@ -37,7 +37,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final WorkerRepository workerRepository;
-    private final ServiceItemRepository serviceItemRepository;
+    private final CatalogItemRepository catalogItemRepository;
     private final ShiftRepository shiftRepository;
     private final UserAccountRepository userRepository;
     private final CustomerRepository customerRepository;
@@ -47,7 +47,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Autowired
     public AppointmentServiceImpl(AppointmentRepository appointmentRepository,
                                   WorkerRepository workerRepository,
-                                  ServiceItemRepository serviceItemRepository,
+                                  CatalogItemRepository catalogItemRepository,
                                   ShiftRepository shiftRepository,
                                   UserAccountRepository userRepository,
                                   CustomerRepository customerRepository,
@@ -55,7 +55,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                                   NotificationSenderService notificationSenderService) {
         this.appointmentRepository = appointmentRepository;
         this.workerRepository = workerRepository;
-        this.serviceItemRepository = serviceItemRepository;
+        this.catalogItemRepository = catalogItemRepository;
         this.shiftRepository = shiftRepository;
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
@@ -65,13 +65,13 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public AvailableSlotsResponse getAvailableSlots(UUID workerId, UUID serviceItemId, LocalDate fecha) {
-        java.util.Optional<ServiceItem> serviceOpt = serviceItemRepository.findById(serviceItemId);
+    public AvailableSlotsResponse getAvailableSlots(UUID workerId, Long serviceItemId, LocalDate fecha) {
+        java.util.Optional<CatalogItem> serviceOpt = catalogItemRepository.findById(serviceItemId);
         if (serviceOpt.isEmpty()) {
             return new AvailableSlotsResponse(Collections.emptyList());
         }
-        ServiceItem service = serviceOpt.get();
-        int duracion = service.getDuracionMinutos();
+        CatalogItem service = serviceOpt.get();
+        int duracion = service.getDuracionMinutos() != null ? service.getDuracionMinutos() : 30;
 
         Worker worker = workerRepository.findById(workerId)
                 .orElseThrow(() -> new IllegalArgumentException("Trabajador no encontrado"));
@@ -134,7 +134,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<LocalDate, Boolean> getAvailableDaysRange(UUID workerId, UUID serviceItemId, LocalDate startDate, LocalDate endDate) {
+    public Map<LocalDate, Boolean> getAvailableDaysRange(UUID workerId, Long serviceItemId, LocalDate startDate, LocalDate endDate) {
         Map<LocalDate, Boolean> result = new HashMap<>();
         LocalDate cursor = startDate;
         while (!cursor.isAfter(endDate)) {
@@ -154,10 +154,11 @@ public class AppointmentServiceImpl implements AppointmentService {
         Worker worker = workerRepository.findById(request.workerId())
                 .orElseThrow(() -> new IllegalArgumentException("Trabajador no encontrado"));
 
-        ServiceItem service = serviceItemRepository.findById(request.serviceItemId())
+        CatalogItem service = catalogItemRepository.findById(request.serviceItemId())
                 .orElseThrow(() -> new IllegalArgumentException("Servicio no encontrado"));
 
-        LocalTime horaFin = request.horaInicio().plusMinutes(service.getDuracionMinutos());
+        int duracion = service.getDuracionMinutos() != null ? service.getDuracionMinutos() : 30;
+        LocalTime horaFin = request.horaInicio().plusMinutes(duracion);
 
         AvailableSlotsResponse available = getAvailableSlots(
                 request.workerId(), request.serviceItemId(), request.fecha());
@@ -323,10 +324,11 @@ public class AppointmentServiceImpl implements AppointmentService {
         Worker worker = workerRepository.findById(request.workerId())
                 .orElseThrow(() -> new IllegalArgumentException("Trabajador no encontrado"));
 
-        ServiceItem service = serviceItemRepository.findById(request.serviceItemId())
+        CatalogItem service = catalogItemRepository.findById(request.serviceItemId())
                 .orElseThrow(() -> new IllegalArgumentException("Servicio no encontrado"));
 
-        LocalTime horaFin = request.horaInicio().plusMinutes(service.getDuracionMinutos());
+        int duracion = service.getDuracionMinutos() != null ? service.getDuracionMinutos() : 30;
+        LocalTime horaFin = request.horaInicio().plusMinutes(duracion);
 
         AvailableSlotsResponse available = getAvailableSlots(
                 request.workerId(), request.serviceItemId(), request.fecha());

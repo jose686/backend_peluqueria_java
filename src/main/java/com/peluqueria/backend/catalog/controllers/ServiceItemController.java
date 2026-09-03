@@ -1,95 +1,54 @@
 package com.peluqueria.backend.catalog.controllers;
 
 import com.peluqueria.backend.catalog.dtos.ServiceItemDto;
-import com.peluqueria.backend.catalog.dtos.ServiceItemRequest;
-import com.peluqueria.backend.catalog.services.ServiceItemService;
+import com.peluqueria.backend.catalog.entities.CatalogType;
+import com.peluqueria.backend.catalog.repositories.CatalogItemRepository;
 
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/services")
 public class ServiceItemController {
 
-    private final ServiceItemService serviceItemService;
+    private final CatalogItemRepository catalogItemRepository;
 
     @Autowired
-    public ServiceItemController(ServiceItemService serviceItemService) {
-        this.serviceItemService = serviceItemService;
+    public ServiceItemController(CatalogItemRepository catalogItemRepository) {
+        this.catalogItemRepository = catalogItemRepository;
     }
 
     /**
-     * Endpoint para obtener el listado de todos los servicios.
+     * Endpoint para obtener el listado de todos los servicios activos del catálogo unificado.
      */
     @GetMapping
     public ResponseEntity<List<ServiceItemDto>> getAll() {
-        return ResponseEntity.ok(serviceItemService.getAll());
+        List<ServiceItemDto> dtos = catalogItemRepository.findByTipoAndActivoTrue(CatalogType.SERVICIO).stream()
+                .map(item -> new ServiceItemDto(
+                        item.getId().toString(),
+                        item.getNombre(),
+                        item.getPrecio(),
+                        item.getDuracionMinutos() != null ? item.getDuracionMinutos() : 30
+                ))
+                .toList();
+        return ResponseEntity.ok(dtos);
     }
 
     /**
      * Endpoint para consultar los detalles de un servicio por su identificador.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable UUID id) {
-        try {
-            return ResponseEntity.ok(serviceItemService.getById(id));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(404).body(errorMap(ex.getMessage()));
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        var opt = catalogItemRepository.findById(id);
+        if (opt.isEmpty()) {
+            return ResponseEntity.status(404).body(errorMap("Servicio no encontrado"));
         }
-    }
-
-    /**
-     * Endpoint para registrar un nuevo servicio (sólo accesible para administradores).
-     */
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> create(@Valid @RequestBody ServiceItemRequest request) {
-        try {
-            ServiceItemDto created = serviceItemService.create(request);
-            return ResponseEntity
-                    .created(URI.create("/api/v1/services/" + created.id()))
-                    .body(created);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(errorMap(ex.getMessage()));
-        }
-    }
-
-    /**
-     * Endpoint para actualizar los datos de un servicio (sólo accesible para administradores).
-     */
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> update(@PathVariable UUID id, @Valid @RequestBody ServiceItemRequest request) {
-        try {
-            return ResponseEntity.ok(serviceItemService.update(id, request));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(404).body(errorMap(ex.getMessage()));
-        }
-    }
-
-    /**
-     * Endpoint para eliminar un servicio del catálogo (sólo accesible para administradores).
-     */
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> delete(@PathVariable UUID id) {
-        try {
-            serviceItemService.delete(id);
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Servicio eliminado con éxito");
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(404).body(errorMap(ex.getMessage()));
-        }
+        return ResponseEntity.ok(ServiceItemDto.fromCatalogItem(opt.get()));
     }
 
     private Map<String, String> errorMap(String message) {

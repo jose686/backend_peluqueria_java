@@ -34,7 +34,7 @@ public class AppointmentPublicController {
     @GetMapping("/slots")
     public ResponseEntity<AvailableSlotsResponse> getAvailableSlots(
             @RequestParam UUID workerId,
-            @RequestParam UUID serviceItemId,
+            @RequestParam Long serviceItemId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         AvailableSlotsResponse response = appointmentService.getAvailableSlots(workerId, serviceItemId, fecha);
         return ResponseEntity.ok(response);
@@ -43,7 +43,7 @@ public class AppointmentPublicController {
     @GetMapping("/slots/range")
     public ResponseEntity<java.util.Map<LocalDate, Boolean>> getAvailableDaysRange(
             @RequestParam UUID workerId,
-            @RequestParam UUID serviceItemId,
+            @RequestParam Long serviceItemId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         java.util.Map<LocalDate, Boolean> response = appointmentService.getAvailableDaysRange(workerId, serviceItemId, startDate, endDate);

@@ -1,6 +1,6 @@
 package com.peluqueria.backend.appointments.entities;
 
-import com.peluqueria.backend.catalog.entities.ServiceItem;
+import com.peluqueria.backend.catalog.entities.CatalogItem;
 import com.peluqueria.backend.staff.entities.Worker;
 import com.peluqueria.backend.users.entities.UserAccount;
 
@@ -63,8 +63,8 @@ public class Appointment {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_item_id", nullable = false)
+    @JoinColumn(name = "catalog_item_id", nullable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private ServiceItem serviceItem;
+    private CatalogItem serviceItem;
 }

@@ -13,12 +13,12 @@ public interface AppointmentService {
     /**
      * Obtiene los horarios disponibles para un trabajador, un servicio y una fecha específica.
      */
-    AvailableSlotsResponse getAvailableSlots(UUID workerId, UUID serviceItemId, LocalDate fecha);
+    AvailableSlotsResponse getAvailableSlots(UUID workerId, Long serviceItemId, LocalDate fecha);
 
     /**
      * Obtiene los días disponibles (con al menos un hueco libre) en un rango de fechas.
      */
-    java.util.Map<LocalDate, Boolean> getAvailableDaysRange(UUID workerId, UUID serviceItemId, LocalDate startDate, LocalDate endDate);
+    java.util.Map<LocalDate, Boolean> getAvailableDaysRange(UUID workerId, Long serviceItemId, LocalDate startDate, LocalDate endDate);
 
     /**
      * Crea una nueva cita para el usuario especificado.

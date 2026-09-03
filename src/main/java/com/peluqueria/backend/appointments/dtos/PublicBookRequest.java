@@ -11,7 +11,7 @@ public record PublicBookRequest(
     UUID workerId,
 
     @NotNull(message = "El servicio es obligatorio")
-    UUID serviceItemId,
+    Long serviceItemId,
 
     @NotNull(message = "La fecha es obligatoria")
     LocalDate fecha,
